@@ -1,4 +1,4 @@
-# ACP-MCP Bridge Server
+# ACP-MCP-Server
 
 ![](https://badge.mcpx.dev?type=server "MCP Server")
 [![PyPI version](https://badge.fury.io/py/acp-mcp-server.svg)](https://badge.fury.io/py/acp-mcp-server)
