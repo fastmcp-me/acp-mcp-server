@@ -2,16 +2,77 @@
 version: '3.8'
 
 services:
-  acp-mcp-bridge:
+  # Streamable HTTP transport service (default)
+  acp-mcp-http:
     build: .
+    container_name: acp-mcp-http
     ports:
-      - "3000:3000"
+      - "9000:9000"
     environment:
-      - ACP_BASE_URL=http://host.docker.internal:8000  # Adjust for your ACP server
-      - PORT=3000
+      - ACP_BASE_URL=http://host.docker.internal:8000
+    command: ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "9000"]
     restart: unless-stopped
+    networks:
+      - acp-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # SSE transport service
+  acp-mcp-sse:
+    build: .
+    container_name: acp-mcp-sse
+    ports:
+      - "8000:8000"
+    environment:
+      - ACP_BASE_URL=http://host.docker.internal:8000
+    command: ["--transport", "sse", "--host", "0.0.0.0", "--port", "8000"]
+    restart: unless-stopped
+    networks:
+      - acp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Development service with volume mounting
+  acp-mcp-dev:
+    build: .
+    container_name: acp-mcp-dev
+    volumes:
+      - ./acp_mcp_server:/app/acp_mcp_server:ro
+    ports:
+      - "8080:8080"
+    environment:
+      - ACP_BASE_URL=http://host.docker.internal:8000
+      - PYTHONUNBUFFERED=1
+    command: ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8080"]
+    restart: unless-stopped
+    networks:
+      - acp-network
+    profiles:
+      - dev
+
+networks:
+  acp-network:
+    driver: bridge
+
+# Usage examples:
+# 
+# Run HTTP transport:
+# docker-compose up acp-mcp-http
+#
+# Run SSE transport:
+# docker-compose up acp-mcp-sse
+#
+# Run both services:
+# docker-compose up
+#
+# Run development mode with live code reload:
+# docker-compose --profile dev up acp-mcp-dev
+#
+# Connect to custom ACP server:
+# ACP_BASE_URL=http://my-acp-server:8001 docker-compose up

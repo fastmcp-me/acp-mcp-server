@@ -4,7 +4,7 @@ import asyncio
 from typing import Dict, Optional, Any
 from pydantic import BaseModel
 from fastmcp import FastMCP
-from run_orchestrator import RunOrchestrator
+from .run_orchestrator import RunOrchestrator
 from enum import Enum
 
 class InteractionState(str, Enum):
@@ -70,11 +70,14 @@ class InteractiveManager:
                 # Agent completed normally
                 output = ""
                 if run.output:
-                    from message_bridge import ACPMessage
-                    mcp_content = await self.orchestrator.message_bridge.acp_to_mcp([
-                        ACPMessage(parts=run.output)
-                    ])
-                    output = "\n".join([content.text for content in mcp_content if content.text])
+                    # Handle ACP output format - run.output is already a list of messages
+                    output_text = ""
+                    for message in run.output:
+                        if isinstance(message, dict) and "parts" in message:
+                            for part in message["parts"]:
+                                if isinstance(part, dict) and "content" in part:
+                                    output_text += part["content"] + "\n"
+                    output = output_text.strip() if output_text else "No text content"
                 
                 return {
                     "status": "completed",
@@ -156,11 +159,14 @@ class InteractiveManager:
                 # Agent completed
                 output = ""
                 if run.output:
-                    from message_bridge import ACPMessage
-                    mcp_content = await self.orchestrator.message_bridge.acp_to_mcp([
-                        ACPMessage(parts=run.output)
-                    ])
-                    output = "\n".join([content.text for content in mcp_content if content.text])
+                    # Handle ACP output format - run.output is already a list of messages
+                    output_text = ""
+                    for message in run.output:
+                        if isinstance(message, dict) and "parts" in message:
+                            for part in message["parts"]:
+                                if isinstance(part, dict) and "content" in part:
+                                    output_text += part["content"] + "\n"
+                    output = output_text.strip() if output_text else "No text content"
                 
                 # Store final result
                 self.interaction_results[run_id] = {

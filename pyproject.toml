@@ -1,0 +1,117 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "acp-mcp-server"
+version = "0.0.2"
+description = "Bridge server connecting Agent Communication Protocol (ACP) agents with Model Context Protocol (MCP) clients"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "GongRzhe", email = "gongrzhe@gmail.com" }
+]
+maintainers = [
+    { name = "GongRzhe", email = "your.email@example.com" }
+]
+keywords = [
+    "acp",
+    "mcp", 
+    "agent-communication-protocol",
+    "model-context-protocol",
+    "ai-agents",
+    "bridge-server",
+    "claude",
+    "anthropic"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Communications",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp>=0.1.0",
+    "aiohttp>=3.9.0",
+    "pydantic>=2.0.0",
+    "uvicorn>=0.27.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.5.0",
+    "pre-commit>=3.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/GongRzhe/ACP-MCP-Server"
+Documentation = "https://github.com/GongRzhe/ACP-MCP-Server#readme"
+Repository = "https://github.com/GongRzhe/ACP-MCP-Server"
+"Bug Tracker" = "https://github.com/GongRzhe/ACP-MCP-Server/issues"
+Changelog = "https://github.com/GongRzhe/ACP-MCP-Server/blob/main/CHANGELOG.md"
+
+[project.scripts]
+acp-mcp-server = "acp_mcp_server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["acp_mcp_server"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/acp_mcp_server",
+    "/README.md",
+    "/LICENSE",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["acp_mcp_server"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true

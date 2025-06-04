@@ -1,16 +1,16 @@
 # message_bridge.py
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any, Union, Optional
 from pydantic import BaseModel
 from fastmcp import FastMCP
 import aiohttp
 import base64
 
 class ACPMessagePart(BaseModel):
-    content: str
+    name: Optional[str] = None
     content_type: str
-    content_encoding: str = "plain"
-    content_url: str = None
-    name: str = None
+    content: Optional[str] = None
+    content_encoding: Optional[str] = "plain"
+    content_url: Optional[str] = None
 
 class ACPMessage(BaseModel):
     parts: List[ACPMessagePart]
@@ -46,13 +46,16 @@ class MessageBridge:
     
     async def mcp_to_acp(self, text_content: str) -> List[ACPMessage]:
         """Convert MCP text to ACP message format"""
-        return [ACPMessage(parts=[
-            ACPMessagePart(
-                content=text_content,
-                content_type="text/plain",
-                content_encoding="plain"
-            )
-        ])]
+        # Create properly formatted ACP message
+        message_part = ACPMessagePart(
+            name=None,
+            content_type="text/plain",
+            content=text_content,
+            content_encoding="plain",
+            content_url=None
+        )
+        
+        return [ACPMessage(parts=[message_part])]
     
     async def _convert_message_part(self, part: ACPMessagePart) -> MCPContent:
         """Convert a single ACP message part to MCP content"""

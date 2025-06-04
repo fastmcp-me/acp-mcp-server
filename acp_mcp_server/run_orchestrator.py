@@ -6,7 +6,7 @@ from typing import Dict, Any, List, Optional, AsyncGenerator
 from enum import Enum
 from pydantic import BaseModel
 from fastmcp import FastMCP
-from message_bridge import MessageBridge, ACPMessage
+from .message_bridge import MessageBridge, ACPMessage
 
 class RunMode(str, Enum):
     SYNC = "sync"
@@ -44,14 +44,37 @@ class RunOrchestrator:
         # Convert input to ACP format
         acp_messages = await self.message_bridge.mcp_to_acp(input_text)
         
+        # Properly serialize ACP messages
+        input_data = []
+        for msg in acp_messages:
+            message_dict = {
+                "parts": []
+            }
+            for part in msg.parts:
+                part_dict = {
+                    "content_type": part.content_type,
+                    "content": part.content
+                }
+                if part.name is not None:
+                    part_dict["name"] = part.name
+                if part.content_encoding != "plain":
+                    part_dict["content_encoding"] = part.content_encoding
+                if part.content_url is not None:
+                    part_dict["content_url"] = part.content_url
+                    
+                message_dict["parts"].append(part_dict)
+            input_data.append(message_dict)
+        
         payload = {
             "agent_name": agent_name,
-            "input": [msg.dict() for msg in acp_messages],
+            "input": input_data,
             "mode": "sync"
         }
         
         if session_id:
             payload["session_id"] = session_id
+        
+        print(f"Sending payload to ACP server: {json.dumps(payload, indent=2)}")
         
         async with aiohttp.ClientSession() as session:
             try:
@@ -61,13 +84,16 @@ class RunOrchestrator:
                     headers={"Content-Type": "application/json"}
                 ) as response:
                     
+                    response_text = await response.text()
+                    print(f"ACP server response ({response.status}): {response_text}")
+                    
                     if response.status == 200:
-                        result = await response.json()
+                        result = json.loads(response_text)
                         run = ACPRun(**result)
                         self.active_runs[run.run_id] = run
                         return run
                     else:
-                        error_msg = f"ACP request failed: {response.status}"
+                        error_msg = f"ACP request failed: {response.status} - {response_text}"
                         return ACPRun(
                             run_id="error",
                             agent_name=agent_name,
@@ -93,9 +119,30 @@ class RunOrchestrator:
         
         acp_messages = await self.message_bridge.mcp_to_acp(input_text)
         
+        # Properly serialize ACP messages
+        input_data = []
+        for msg in acp_messages:
+            message_dict = {
+                "parts": []
+            }
+            for part in msg.parts:
+                part_dict = {
+                    "content_type": part.content_type,
+                    "content": part.content
+                }
+                if part.name is not None:
+                    part_dict["name"] = part.name
+                if part.content_encoding != "plain":
+                    part_dict["content_encoding"] = part.content_encoding
+                if part.content_url is not None:
+                    part_dict["content_url"] = part.content_url
+                    
+                message_dict["parts"].append(part_dict)
+            input_data.append(message_dict)
+        
         payload = {
             "agent_name": agent_name,
-            "input": [msg.dict() for msg in acp_messages],
+            "input": input_data,
             "mode": "async"
         }
         
@@ -110,7 +157,7 @@ class RunOrchestrator:
                     headers={"Content-Type": "application/json"}
                 ) as response:
                     
-                    if response.status == 200:
+                    if response.status in [200, 202]:  # Accept both 200 and 202 for async operations
                         result = await response.json()
                         run_id = result.get("run_id")
                         
@@ -124,7 +171,8 @@ class RunOrchestrator:
                         
                         return run_id
                     else:
-                        raise Exception(f"Failed to start async run: {response.status}")
+                        response_text = await response.text()
+                        raise Exception(f"Failed to start async run: {response.status} - {response_text}")
                         
             except Exception as e:
                 raise Exception(f"Error starting async run: {e}")
@@ -141,7 +189,8 @@ class RunOrchestrator:
                         self.active_runs[run_id] = run
                         return run
                     else:
-                        raise Exception(f"Failed to get run status: {response.status}")
+                        response_text = await response.text()
+                        raise Exception(f"Failed to get run status: {response.status} - {response_text}")
                         
             except Exception as e:
                 # Return cached run or error
@@ -165,9 +214,30 @@ class RunOrchestrator:
         
         acp_messages = await self.message_bridge.mcp_to_acp(input_text)
         
+        # Properly serialize ACP messages
+        input_data = []
+        for msg in acp_messages:
+            message_dict = {
+                "parts": []
+            }
+            for part in msg.parts:
+                part_dict = {
+                    "content_type": part.content_type,
+                    "content": part.content
+                }
+                if part.name is not None:
+                    part_dict["name"] = part.name
+                if part.content_encoding != "plain":
+                    part_dict["content_encoding"] = part.content_encoding
+                if part.content_url is not None:
+                    part_dict["content_url"] = part.content_url
+                    
+                message_dict["parts"].append(part_dict)
+            input_data.append(message_dict)
+        
         payload = {
             "agent_name": agent_name,
-            "input": [msg.dict() for msg in acp_messages], 
+            "input": input_data, 
             "mode": "stream"
         }
         
@@ -193,7 +263,8 @@ class RunOrchestrator:
                                 if data and data != '[DONE]':
                                     yield data
                     else:
-                        yield f"Error: Stream failed with status {response.status}"
+                        response_text = await response.text()
+                        yield f"Error: Stream failed with status {response.status} - {response_text}"
                         
             except Exception as e:
                 yield f"Error: {e}"
@@ -217,11 +288,14 @@ def register_orchestrator_tools(mcp: FastMCP, orchestrator: RunOrchestrator):
                 if run.status == RunStatus.COMPLETED:
                     # Convert output back to readable format
                     if run.output:
-                        mcp_content = await orchestrator.message_bridge.acp_to_mcp([
-                            ACPMessage(parts=run.output)
-                        ])
-                        result = "\n".join([content.text for content in mcp_content if content.text])
-                        return result
+                        # Handle ACP output format
+                        output_text = ""
+                        for message in run.output:
+                            if isinstance(message, dict) and "parts" in message:
+                                for part in message["parts"]:
+                                    if isinstance(part, dict) and "content" in part:
+                                        output_text += part["content"] + "\n"
+                        return output_text.strip() if output_text else "Agent completed with no text output"
                     else:
                         return "Agent completed with no output"
                 else:
@@ -254,10 +328,13 @@ def register_orchestrator_tools(mcp: FastMCP, orchestrator: RunOrchestrator):
             
             if run.status == RunStatus.COMPLETED and run.output:
                 # Convert output to readable format
-                mcp_content = await orchestrator.message_bridge.acp_to_mcp([
-                    ACPMessage(parts=run.output)
-                ])
-                result["output"] = "\n".join([content.text for content in mcp_content if content.text])
+                output_text = ""
+                for message in run.output:
+                    if isinstance(message, dict) and "parts" in message:
+                        for part in message["parts"]:
+                            if isinstance(part, dict) and "content" in part:
+                                output_text += part["content"] + "\n"
+                result["output"] = output_text.strip() if output_text else "No text content"
             
             return json.dumps(result, indent=2)
             

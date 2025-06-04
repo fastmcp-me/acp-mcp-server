@@ -3,8 +3,8 @@ import json
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel
 from fastmcp import FastMCP
-from agent_discovery import AgentDiscoveryTool, ACPAgent
-from run_orchestrator import RunOrchestrator
+from .agent_discovery import AgentDiscoveryTool, ACPAgent
+from .run_orchestrator import RunOrchestrator
 
 class RoutingRule(BaseModel):
     keywords: List[str]
@@ -147,12 +147,14 @@ class AgentRouter:
                 }
                 
                 if run.output:
-                    # Convert output for display
-                    from message_bridge import ACPMessage
-                    mcp_content = await self.orchestrator.message_bridge.acp_to_mcp([
-                        ACPMessage(parts=run.output)
-                    ])
-                    result["output"] = "\n".join([content.text for content in mcp_content if content.text])
+                    # Handle ACP output format - run.output is already a list of messages
+                    output_text = ""
+                    for message in run.output:
+                        if isinstance(message, dict) and "parts" in message:
+                            for part in message["parts"]:
+                                if isinstance(part, dict) and "content" in part:
+                                    output_text += part["content"] + "\n"
+                    result["output"] = output_text.strip() if output_text else "No text content"
                 
                 if run.error:
                     result["error"] = run.error
