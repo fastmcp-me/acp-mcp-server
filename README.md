@@ -124,28 +124,6 @@ The bridge server provides several MCP tools:
 │ (Claude Desktop)│◄──►│     Server      │◄──►│ (echo, chat,    │
 │                 │    │                 │    │  translate...)  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-
-### Helper Script
-
-Use the `run_server.py` helper script for convenient server management:
-
-```bash
-# Run with local installation
-./run_server.py --preset claude  # For Claude Desktop (STDIO)
-./run_server.py --preset http    # HTTP server on port 9000
-./run_server.py --preset sse     # SSE server on port 8000
-./run_server.py --preset dev     # Development mode
-
-# Run with uvx
-./run_server.py --method uvx --transport sse --port 8000
-
-# Run with Docker
-./run_server.py --method docker --transport streamable-http --port 9000
-
-# Custom configuration
-./run_server.py --transport sse --host 0.0.0.0 --port 8080 --acp-url http://my-acp:8001
-```
-
        │                         │                       │
    MCP Protocol            Protocol Bridge         ACP Protocol
   (STDIO/SSE/HTTP)        (FastMCP + aiohttp)    (HTTP/WebSocket)
@@ -169,56 +147,6 @@ acp-mcp-server --transport sse --port 8000
 For REST API integration:
 ```bash
 acp-mcp-server --transport streamable-http --port 9000
-```
-
-## 🧪 Development
-
-### Setup Development Environment
-
-```bash
-git clone https://github.com/GongRzhe/ACP-MCP-Server
-cd ACP-MCP-Server
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -e ".[dev]"
-```
-
-### Running Tests
-
-```bash
-pytest
-```
-
-### Code Formatting
-
-```bash
-black acp_mcp_server/
-isort acp_mcp_server/
-```
-
-## 📚 Examples
-
-### Basic Agent Execution
-
-```python
-from acp_mcp_server import ACPMCPServer
-
-# Create server instance
-server = ACPMCPServer("http://localhost:8000")
-
-# Run with STDIO for Claude Desktop
-server.run()
-
-# Or run with HTTP for web integration
-server.run(transport="streamable-http", port=9000)
-```
-
-### Custom ACP Integration
-
-```python
-# Connect to custom ACP server
-server = ACPMCPServer("http://my-acp-server:8001")
-server.run(transport="sse", port=8080)
 ```
 
 ## 🐳 Docker
