@@ -1,0 +1,17 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  acp-mcp-bridge:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - ACP_BASE_URL=http://host.docker.internal:8000  # Adjust for your ACP server
+      - PORT=3000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
