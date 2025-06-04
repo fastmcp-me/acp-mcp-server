@@ -1,5 +1,6 @@
 # ACP-MCP Bridge Server
 
+![](https://badge.mcpx.dev?type=server "MCP Server")
 [![PyPI version](https://badge.fury.io/py/acp-mcp-server.svg)](https://badge.fury.io/py/acp-mcp-server)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
