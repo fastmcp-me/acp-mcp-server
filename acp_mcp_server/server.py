@@ -14,6 +14,8 @@ import argparse
 import os
 import sys
 from typing import Optional
+# Set required environment variable for FastMCP 2.8.1+
+os.environ.setdefault('FASTMCP_LOG_LEVEL', 'INFO')
 from fastmcp import FastMCP
 
 # Import all components
